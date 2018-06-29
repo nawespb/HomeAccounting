@@ -6,7 +6,8 @@ public class Main {
     
     public static void main(String[] args) {
         DBConnector db = new DBConnector();
-        db.execute("SELECT * FROM accounting LIMIT 100;");
+        db.executeInsert("MILK", "KEFIR", 75);
+        db.executeSelect(2);
         db.close();
     }
     

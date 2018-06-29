@@ -3,9 +3,9 @@ package app;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public class DBConnector {
     
@@ -13,16 +13,19 @@ public class DBConnector {
     private static final String USER = "root";
     private static final String PASSWORD = "123456";
     
-    private static Connection con;
-    private static Statement stmt;
-    private static ResultSet rs;
+    private static final String SELECT = "SELECT ID, PRODUCT_NAME FROM accounting where id = ?;";
+    private static final String INSERT = "INSERT INTO accounting (PRODUCT_GROUP, PRODUCT_NAME, PRICE) VALUES (?, ?, ?);";
+    
+    private Connection con;
+    private ResultSet rs;
+    private PreparedStatement prep;
+        
 
     public DBConnector() {
         
         try {
             
-            con = DriverManager.getConnection(URL, USER, PASSWORD);
-            stmt = con.createStatement();
+            con = DriverManager.getConnection(URL, USER, PASSWORD);           
            
         } catch (SQLException sqlEx) {
             sqlEx.printStackTrace();
@@ -30,36 +33,48 @@ public class DBConnector {
         
     }
     
-    public void execute (String query) {
+public void executeSelect (int id) {
         
         try {
-            rs = stmt.executeQuery(query);
+            
+            prep = con.prepareStatement(SELECT);
+            prep.setInt(1, id);
+            rs = prep.executeQuery();
             while (rs.next()) {
                 int count = rs.getInt(1);
-                System.out.println(" : " + count);
+                String name = rs.getString(2);
+                System.out.println(count + " " + name);
             }
+            
         } catch (SQLException ex) {
             ex.printStackTrace();
-        } finally {
-            try {
-                rs.close();
-            } catch (SQLException se) {
-                
-            }
         }
-        
+    }
+    
+    public void executeInsert (String group, String name, int price) {
+        try {
+            
+            prep = con.prepareStatement(INSERT);
+            prep.setString(1, group);
+            prep.setString(2, name);
+            prep.setInt(3, price);
+            prep.executeUpdate();
+            
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
     
     public void close () {
         
         try { 
-            con.close(); 
+            prep.close(); 
         } catch(SQLException se) { 
         }
         try { 
-            stmt.close(); 
+            con.close(); 
         } catch(SQLException se) { 
         }
+        
     }
-    
 }
