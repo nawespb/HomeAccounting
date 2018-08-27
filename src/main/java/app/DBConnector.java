@@ -11,18 +11,22 @@ import java.util.Date;
 
 public class DBConnector {
     
-    private static final String URL = "jdbc:mysql://localhost:3306/homeaccounting?useSSL=false";
+    private static final String URL = "jdbc:mysql://localhost:3306/homeaccounting?useSSL=false&useUnicode=true&amp;characterEncoding=utf8";
     private static final String USER = "root";
     private static final String PASSWORD = "123456";
     
-    private static final String SELECT = "SELECT ID, PRODUCT_NAME FROM accounting WHERE ID = ?;";
+    private static final String SELECT = "SELECT * FROM accounting WHERE ID = ?;";
     private static final String SELECT_ALL = "SELECT * FROM accounting LIMIT ?;";
     private static final String SELECT_BY_DATE = "SELECT * FROM accounting "
             + "WHERE SPENDING_DATE BETWEEN ? AND ?;";
+    private static final String SELECT_BY_DATE_1 = "SELECT * FROM accounting "
+            + "WHERE SPENDING_DATE <= ?;";
+    private static final String SELECT_BY_DATE_2 = "SELECT * FROM accounting "
+            + "WHERE SPENDING_DATE >= ?;";
     private static final String INSERT = "INSERT INTO accounting "
-            + "(SPENDING_DATE, PRODUCT_GROUP, PRODUCT_NAME, PRICE) VALUES (?, ?, ?, ?);";
+            + "(SPENDING_DATE, PRODUCT_GROUP, PRODUCT_NAME, AMOUNT, PRICE) VALUES (?, ?, ?, ?, ?);";
     private static final String UPDATE = "UPDATE accounting "
-            + "SET PRODUCT_NAME = ?, PRICE = ? WHERE ID = ?";
+            + " SET SPENDING_DATE = ?, PRODUCT_GROUP = ?, PRODUCT_NAME = ?, AMOUNT = ?, PRICE = ? WHERE ID = ?";
     private static final String DELETE = "DELETE FROM accounting WHERE ID = ?;";
     
     private Connection con;
@@ -36,82 +40,128 @@ public class DBConnector {
             
             con = DriverManager.getConnection(URL, USER, PASSWORD);           
            
-        } catch (SQLException sqlEx) {
-            sqlEx.printStackTrace();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
         
     }
     
-    public String select (int id) {
+    public ArrayList<Product> selectAll (int limit) {
         
-        String result = "";
+        ArrayList<Product> arr = new ArrayList<>();
+        try {
+            prep = con.prepareStatement(SELECT_ALL);
+            prep.setInt(1, limit);
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                Product prod = new Product();
+                prod.setId(rs.getInt(1));
+                prod.setDate(rs.getDate(2));
+                prod.setGroup(rs.getString(3));
+                prod.setName(rs.getString(4));
+                prod.setAmount(rs.getInt(5));
+                prod.setPrice(rs.getDouble(6));
+                arr.add(prod);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return arr;
+    }
+    
+    public Product selectByID (int id) {
+        
+        Product result = new Product();
         
         try {
-            
             prep = con.prepareStatement(SELECT);
             prep.setInt(1, id);
             rs = prep.executeQuery();
             while (rs.next()) {
-                int pId = rs.getInt(1);
-                String name = rs.getString(2);
-                result = pId + name;
+                result.setId(rs.getInt(1));
+                result.setDate(rs.getDate(2));
+                result.setGroup(rs.getString(3));
+                result.setName(rs.getString(4));
+                result.setAmount(rs.getInt(5));
+                result.setPrice(rs.getDouble(6));
             }
-            
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
         return result;
     }
     
-    public ArrayList<String> selectAll (int limit) {
+    public ArrayList<Product> selectByDate (Date from, Date to) {
         
-        ArrayList<String> arr = new ArrayList<>();
-        try {
-            
-            prep = con.prepareStatement(SELECT_ALL);
-            prep.setInt(1, limit);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                int id = rs.getInt(1);
-                String name = rs.getString(4);
-                arr.add("ID: " + id + ": " + name);
+        ArrayList<Product> arr = new ArrayList<>();
+        if (from != null && to != null) {
+            try {
+                prep = con.prepareStatement(SELECT_BY_DATE);
+                prep.setDate(1, new java.sql.Date(from.getTime()));
+                prep.setDate(2, new java.sql.Date(to.getTime()));
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    Product prod = new Product();
+                    prod.setId(rs.getInt(1));
+                    prod.setDate(rs.getDate(2));
+                    prod.setGroup(rs.getString(3));
+                    prod.setName(rs.getString(4));
+                    prod.setAmount(rs.getInt(5));
+                    prod.setPrice(rs.getDouble(6));
+                    arr.add(prod);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
-            
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
+        } else if (from != null) {
+            try {
+                prep = con.prepareStatement(SELECT_BY_DATE_2);
+                prep.setDate(1, new java.sql.Date(from.getTime()));
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    Product prod = new Product();
+                    prod.setId(rs.getInt(1));
+                    prod.setDate(rs.getDate(2));
+                    prod.setGroup(rs.getString(3));
+                    prod.setName(rs.getString(4));
+                    prod.setAmount(rs.getInt(5));
+                    prod.setPrice(rs.getDouble(6));
+                    arr.add(prod);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } else if (to != null){
+            try {
+                prep = con.prepareStatement(SELECT_BY_DATE_1);
+                prep.setDate(1, new java.sql.Date(to.getTime()));
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    Product prod = new Product();
+                    prod.setId(rs.getInt(1));
+                    prod.setDate(rs.getDate(2));
+                    prod.setGroup(rs.getString(3));
+                    prod.setName(rs.getString(4));
+                    prod.setAmount(rs.getInt(5));
+                    prod.setPrice(rs.getDouble(6));
+                    arr.add(prod);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }   
         return arr;
     }
     
-    public ArrayList<String> selectByDate (Date from, Date to) {
-        
-        ArrayList<String> arr = new ArrayList<>();
-        try {
-            
-            prep = con.prepareStatement(SELECT_BY_DATE);
-            prep.setDate(1, new java.sql.Date(from.getTime()));
-            prep.setDate(2, new java.sql.Date(to.getTime()));
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                int id = rs.getInt(1);
-                String name = rs.getString(4);
-                arr.add("ID: " + id + ": " + name);
-            }
-            
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        return arr;
-    }
-    
-    public void insert (Date date, String group, String name, int price) {
+    public void insert (Date date, String group, String name, int amount, double price) {
         try {
             
             prep = con.prepareStatement(INSERT);
             prep.setDate(1, new java.sql.Date(date.getTime()));
             prep.setString(2, group);
             prep.setString(3, name);
-            prep.setInt(4, price);
+            prep.setInt(4, amount);
+            prep.setDouble(5, price);
             prep.executeUpdate();
             
         } catch (SQLException ex) {
@@ -119,13 +169,16 @@ public class DBConnector {
         }
     }
     
-    public void update (int id, String name, int price) {
+    public void update (int id, Date date, String group, String name, int amount, double price) {
         try {
             
             prep = con.prepareStatement(UPDATE);
-            prep.setString(1, name);
-            prep.setInt(2, price);
-            prep.setInt(3, id);
+            prep.setDate(1, new java.sql.Date(date.getTime()));
+            prep.setString(2, group);
+            prep.setString(3, name);
+            prep.setInt(4, amount);
+            prep.setDouble(5, price);
+            prep.setInt(6, id);
             prep.executeUpdate();
             
         } catch (SQLException ex) {
@@ -133,7 +186,7 @@ public class DBConnector {
         }
     }
     
-    public void delete (int id) {
+    public void deleteByID (int id) {
         try {
             
             prep = con.prepareStatement(DELETE);
@@ -148,13 +201,8 @@ public class DBConnector {
     public void close () {
         
         try { 
-            prep.close(); 
-        } catch(SQLException se) { 
-        }
-        try { 
             con.close(); 
         } catch(SQLException se) { 
         }
-        
     }
 }
